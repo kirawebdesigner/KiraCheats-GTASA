@@ -6,8 +6,6 @@ import android.graphics.drawable.GradientDrawable;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.Gravity;
-import android.view.KeyCharacterMap;
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -22,6 +20,8 @@ public final class KiraMenu {
     private Button bubble;
     private ScrollView menu;
     private Handler handler;
+
+    private native boolean runNativeCheat(int id);
 
     public KiraMenu() {}
 
@@ -42,7 +42,11 @@ public final class KiraMenu {
     }
 
     private int dp(float value) {
-        return (int) (value * activity.getResources().getDisplayMetrics().density + 0.5f);
+        return (int) (
+                value *
+                activity.getResources().getDisplayMetrics().density +
+                0.5f
+        );
     }
 
     private GradientDrawable rounded(int color, float radiusDp) {
@@ -62,7 +66,7 @@ public final class KiraMenu {
         return view;
     }
 
-    private Button cheatButton(final String title, final String code) {
+    private Button cheatButton(final String title, final int id) {
         Button button = new Button(activity);
         button.setText(title);
         button.setAllCaps(false);
@@ -71,86 +75,43 @@ public final class KiraMenu {
         button.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
         button.setPadding(dp(14), 0, dp(14), 0);
         button.setFocusable(false);
-        button.setBackground(rounded(Color.rgb(44, 47, 58), 10));
+        button.setBackground(
+                rounded(Color.rgb(44, 47, 58), 10)
+        );
 
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(48));
+        LinearLayout.LayoutParams lp =
+                new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        dp(48)
+                );
         lp.setMargins(dp(8), dp(4), dp(8), dp(4));
         button.setLayoutParams(lp);
 
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                sendCheat(title, code);
+                executeCheat(title, id);
             }
         });
 
         return button;
     }
 
-    private Button infoButton(final String title, final String message) {
-        Button button = new Button(activity);
-        button.setText(title);
-        button.setAllCaps(false);
-        button.setTextColor(Color.WHITE);
-        button.setTextSize(14f);
-        button.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
-        button.setPadding(dp(14), 0, dp(14), 0);
-        button.setFocusable(false);
-        button.setBackground(rounded(Color.rgb(52, 48, 70), 10));
-
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(48));
-        lp.setMargins(dp(8), dp(4), dp(8), dp(4));
-        button.setLayoutParams(lp);
-
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                toast(message);
-            }
-        });
-
-        return button;
-    }
-
-    private void sendCheat(final String title, final String code) {
-        if (activity == null || activity.isFinishing()) return;
-
-        // Hide the card briefly so the game can regain key focus.
-        menu.setVisibility(View.GONE);
-
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    View decor = activity.getWindow().getDecorView();
-                    decor.setFocusableInTouchMode(true);
-                    decor.requestFocus();
-
-                    KeyCharacterMap keyMap =
-                            KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
-                    KeyEvent[] events = keyMap.getEvents(code.toCharArray());
-
-                    if (events == null || events.length == 0) {
-                        toast("Could not create game key events for " + title);
-                        return;
-                    }
-
-                    for (KeyEvent event : events) {
-                        activity.dispatchKeyEvent(event);
-                    }
-
-                    toast(title + " sent");
-                } catch (Throwable error) {
-                    toast("KiraCheats input error");
-                }
-            }
-        }, 120);
+    private void executeCheat(String title, int id) {
+        try {
+            boolean ok = runNativeCheat(id);
+            toast(ok ? title + " ✓" : title + " failed");
+        } catch (Throwable error) {
+            toast(title + " error");
+        }
     }
 
     private void toast(String message) {
-        Toast.makeText(activity, message, Toast.LENGTH_SHORT).show();
+        Toast.makeText(
+                activity,
+                message,
+                Toast.LENGTH_SHORT
+        ).show();
     }
 
     private void buildMenu() {
@@ -170,23 +131,28 @@ public final class KiraMenu {
         bubble.setPadding(0, 0, 0, 0);
         bubble.setFocusable(false);
         bubble.setElevation(dp(8));
-        bubble.setBackground(rounded(Color.rgb(112, 70, 255), 26));
+        bubble.setBackground(
+                rounded(Color.rgb(112, 70, 255), 26)
+        );
 
         FrameLayout.LayoutParams bubbleParams =
-                new FrameLayout.LayoutParams(dp(52), dp(52));
-        bubbleParams.gravity = Gravity.TOP | Gravity.START;
-        bubbleParams.leftMargin = dp(14);
-        bubbleParams.topMargin = dp(22);
+                new FrameLayout.LayoutParams(
+                        dp(52),
+                        dp(52)
+                );
+        bubbleParams.gravity = Gravity.CENTER_VERTICAL | Gravity.START;
+        bubbleParams.leftMargin = dp(12);
         decor.addView(bubble, bubbleParams);
 
         LinearLayout content = new LinearLayout(activity);
         content.setOrientation(LinearLayout.VERTICAL);
         content.setPadding(dp(6), dp(8), dp(6), dp(12));
         content.setBackground(
-                rounded(Color.argb(238, 22, 23, 30), 16));
+                rounded(Color.argb(238, 22, 23, 30), 16)
+        );
 
         TextView title = new TextView(activity);
-        title.setText("KiraCheats  •  GTA SA ARM64");
+        title.setText("KiraCheats  •  GTA SA 2.11.311");
         title.setTextColor(Color.WHITE);
         title.setTextSize(18f);
         title.setGravity(Gravity.CENTER_VERTICAL);
@@ -195,11 +161,14 @@ public final class KiraMenu {
                 title,
                 new LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
-                        dp(48)));
+                        dp(48)
+                )
+        );
 
         TextView subtitle = new TextView(activity);
         subtitle.setText(
-                "Tap an option. The menu hides while the game receives the cheat.");
+                "Direct native GTA cheats — no keyboard injection"
+        );
         subtitle.setTextColor(Color.rgb(170, 174, 190));
         subtitle.setTextSize(11f);
         subtitle.setPadding(dp(12), 0, dp(12), dp(10));
@@ -207,54 +176,87 @@ public final class KiraMenu {
 
         content.addView(section("Player"));
         content.addView(cheatButton(
-                "Health + armor + money", "HESOYAM"));
+                "Health + armor + $250K", 1));
         content.addView(cheatButton(
-                "Infinite health", "BAGUVIX"));
+                "Infinite health", 2));
         content.addView(cheatButton(
-                "Never wanted", "AEZAKMI"));
+                "Never wanted", 3));
         content.addView(cheatButton(
-                "Clear wanted level", "ASNAEB"));
+                "Clear wanted level", 4));
         content.addView(cheatButton(
-                "Infinite oxygen", "CVWKXAM"));
+                "Maximum stamina", 5));
         content.addView(cheatButton(
-                "Never hungry", "AEDUWNV"));
+                "Maximum driving skills", 6));
         content.addView(cheatButton(
-                "Maximum respect", "OGXSDAG"));
+                "Maximum weapon skills", 7));
+
+        content.addView(section("Weapons + gear"));
         content.addView(cheatButton(
-                "Maximum driving skill", "VQIMAHA"));
+                "Weapon set 1", 20));
+        content.addView(cheatButton(
+                "Weapon set 2", 21));
+        content.addView(cheatButton(
+                "Weapon set 3", 22));
+        content.addView(cheatButton(
+                "Parachute", 23));
+        content.addView(cheatButton(
+                "Jetpack", 24));
+
+        content.addView(section("Vehicles"));
+        content.addView(cheatButton(
+                "Spawn Rhino", 40));
+        content.addView(cheatButton(
+                "Spawn Hunter", 41));
+        content.addView(cheatButton(
+                "Spawn Hydra", 42));
+        content.addView(cheatButton(
+                "Spawn Quad", 43));
+        content.addView(cheatButton(
+                "Spawn Dozer", 44));
+        content.addView(cheatButton(
+                "Spawn Stunt Plane", 45));
+        content.addView(cheatButton(
+                "Spawn Monster Truck", 46));
+        content.addView(cheatButton(
+                "Spawn Vortex", 47));
+        content.addView(cheatButton(
+                "Spawn Tanker", 48));
+        content.addView(cheatButton(
+                "Spawn Trashmaster", 49));
+        content.addView(cheatButton(
+                "Spawn Stock Car 1", 50));
+        content.addView(cheatButton(
+                "Spawn Stock Car 2", 51));
+        content.addView(cheatButton(
+                "Spawn Stock Car 3", 52));
+        content.addView(cheatButton(
+                "Spawn Stock Car 4", 53));
 
         content.addView(section("Weather"));
         content.addView(cheatButton(
-                "Sunny", "AFZLLQLL"));
+                "Sunny", 70));
         content.addView(cheatButton(
-                "Very sunny", "ICIKPYH"));
+                "Extra sunny", 71));
         content.addView(cheatButton(
-                "Cloudy", "ALNSFMZO"));
+                "Cloudy", 72));
         content.addView(cheatButton(
-                "Rain", "AUIFRVQS"));
+                "Rain", 73));
         content.addView(cheatButton(
-                "Fog", "CFVFGMJ"));
+                "Fog", 74));
 
-        content.addView(section("Time + world"));
+        content.addView(section("Time"));
         content.addView(cheatButton(
-                "Faster clock", "YSOHNUL"));
+                "Faster time", 90));
         content.addView(cheatButton(
-                "Faster gameplay", "PPGWJHT"));
+                "Slower time", 91));
         content.addView(cheatButton(
-                "Slower gameplay", "LIYOAAY"));
+                "Midnight", 92));
         content.addView(cheatButton(
-                "Always midnight", "XJVSNAJ"));
-        content.addView(cheatButton(
-                "Orange evening sky", "OFVIAC"));
-        content.addView(cheatButton(
-                "Reduced traffic", "THGLOJ"));
-        content.addView(cheatButton(
-                "Green traffic lights", "ZEIIVG"));
+                "Dusk / orange sky", 93));
 
         content.addView(section("Map"));
-        content.addView(infoButton(
-                "All cities unlocked",
-                "Load your installed 100% save in slot 1 for the full map."));
+        content.addView(cheatButton(
+                "Reveal full radar map", 110));
 
         menu = new ScrollView(activity);
         menu.setTag("KiraCheatsMenu");
@@ -265,15 +267,23 @@ public final class KiraMenu {
         menu.setVisibility(View.GONE);
 
         int screenHeight =
-                activity.getResources().getDisplayMetrics().heightPixels;
+                activity.getResources()
+                        .getDisplayMetrics()
+                        .heightPixels;
+
         int maxHeight =
-                Math.max(dp(300), screenHeight - dp(40));
+                Math.max(dp(300), screenHeight - dp(36));
 
         FrameLayout.LayoutParams menuParams =
-                new FrameLayout.LayoutParams(dp(330), maxHeight);
-        menuParams.gravity = Gravity.TOP | Gravity.START;
+                new FrameLayout.LayoutParams(
+                        dp(350),
+                        maxHeight
+                );
+
+        menuParams.gravity =
+                Gravity.CENTER_VERTICAL | Gravity.START;
         menuParams.leftMargin = dp(76);
-        menuParams.topMargin = dp(18);
+
         decor.addView(menu, menuParams);
 
         bubble.setOnClickListener(new View.OnClickListener() {
@@ -282,10 +292,11 @@ public final class KiraMenu {
                 menu.setVisibility(
                         menu.getVisibility() == View.VISIBLE
                                 ? View.GONE
-                                : View.VISIBLE);
+                                : View.VISIBLE
+                );
             }
         });
 
-        toast("KiraCheats loaded — tap K");
+        toast("KiraCheats v1.1 loaded");
     }
 }
