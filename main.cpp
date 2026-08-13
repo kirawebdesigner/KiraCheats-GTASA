@@ -4,7 +4,7 @@
 
 #include <cstring>
 
-MYMOD(net.kiraweb.gtasa.cheats, KiraCheats GTASA, 1.1.0, KiraWeb)
+MYMOD(net.kiraweb.gtasa.cheats, KiraCheats GTASA, 1.2.0, KiraWeb)
 NEEDGAME(com.rockstargames.gtasa)
 
 uintptr_t pGame = 0;
@@ -530,7 +530,7 @@ static void StartKiraMenu(void*)
 extern "C" void OnModLoad()
 {
     logger->SetTag("KiraCheats");
-    logger->Info("KiraCheats v1.1.0 direct ARM64 loaded.");
+    logger->Info("KiraCheats v1.2.0 bundled ARM64 loaded.");
 
     pGame = aml->GetLib("libGame.so");
 
@@ -543,4 +543,28 @@ extern "C" void OnModLoad()
     {
         logger->Error("Could not queue KiraMenu on Android UI thread.");
     }
+}
+
+
+// Bundled-APK entry point.
+// When libKiraCheats.so is loaded with System.loadLibrary("KiraCheats")
+// after libAML.so, the AML interface is already available and we can
+// launch the mod without needing a file in Android/data/.../mods/.
+extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
+{
+    (void)vm;
+    (void)reserved;
+
+    if(!aml)
+    {
+        logger->SetTag("KiraCheats");
+        logger->Error("Bundled KiraCheats loaded, but AML interface is unavailable.");
+        return JNI_VERSION_1_6;
+    }
+
+    logger->SetTag("KiraCheats");
+    logger->Info("Bundled APK entry detected; starting KiraCheats.");
+    OnModLoad();
+
+    return JNI_VERSION_1_6;
 }
