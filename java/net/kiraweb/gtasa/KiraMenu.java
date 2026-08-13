@@ -1,4 +1,4 @@
-kipackage net.kiraweb.gtasa;
+package net.kiraweb.gtasa;
 
 import android.app.Activity;
 import android.graphics.Color;
