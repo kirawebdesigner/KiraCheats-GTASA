@@ -1,0 +1,43 @@
+name: Build KiraCheats ARM64
+
+on:
+  push:
+    branches: [ "main" ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get AndroidModLoader headers
+        run: |
+          curl -L https://github.com/RusJJ/AndroidModLoader/archive/refs/heads/main.zip -o AML.zip
+          unzip -q AML.zip
+          cp -r AndroidModLoader-main/mod ./mod
+
+      - name: Install Android NDK r24
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r24
+          local-cache: false
+
+      - name: Build KiraCheats
+        run: |
+          ndk-build \
+            NDK_PROJECT_PATH=. \
+            APP_BUILD_SCRIPT=./Android.mk \
+            NDK_APPLICATION_MK=./Application.mk \
+            NDK_DEBUG=0 \
+            -j4
+
+      - name: Upload ARM64 mod
+        uses: actions/upload-artifact@v4
+        with:
+          name: KiraCheats-arm64
+          path: libs/arm64-v8a/libKiraCheats.so
+          if-no-files-found: error
