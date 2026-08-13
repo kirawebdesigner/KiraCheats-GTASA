@@ -3,7 +3,6 @@ name: Build KiraCheats ARM64
 on:
   push:
     branches: [ "main" ]
-
   workflow_dispatch:
 
 jobs:
@@ -13,6 +12,44 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Build KiraMenu DEX
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          if [ -z "$SDK" ]; then
+            echo "Android SDK not found"
+            exit 1
+          fi
+
+          ANDROID_JAR="$(find "$SDK/platforms" -mindepth 2 -maxdepth 2 -name android.jar | sort -V | tail -1)"
+          D8="$(find "$SDK/build-tools" -mindepth 2 -maxdepth 2 -type f -name d8 | sort -V | tail -1)"
+
+          echo "Using android.jar: $ANDROID_JAR"
+          echo "Using d8: $D8"
+
+          mkdir -p build/java_classes build/dex
+
+          javac \
+            -source 8 \
+            -target 8 \
+            -classpath "$ANDROID_JAR" \
+            -d build/java_classes \
+            java/net/kiraweb/gtasa/KiraMenu.java
+
+          jar cf build/KiraMenu.jar -C build/java_classes .
+
+          "$D8" \
+            --lib "$ANDROID_JAR" \
+            --min-api 21 \
+            --output build/dex \
+            build/KiraMenu.jar
+
+          python3 tools/embed_dex.py \
+            build/dex/classes.dex \
+            menu_dex.h
 
       - name: Get AndroidModLoader headers
         run: |
@@ -38,6 +75,6 @@ jobs:
       - name: Upload ARM64 mod
         uses: actions/upload-artifact@v4
         with:
-          name: KiraCheats-arm64
+          name: KiraCheats-arm64-v1
           path: libs/arm64-v8a/libKiraCheats.so
           if-no-files-found: error
